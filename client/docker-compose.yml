@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    container_name: front-rtmp
+    hostname: front-rtmp
+    stdin_open: true
+    ports:
+      - '3000:3000'
+    command: yarn start
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

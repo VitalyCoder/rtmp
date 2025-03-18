@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    ports:
+      - '1935:1935'
+      - '8554:8554'
+      - '8888:8888'
+    environment:
+      - MTX_RTMP_ENABLED=true
+      - MTX_RTMP_PORT=1935
+      - MTX_RTSP_ENABLED=true
+      - MTX_RTSP_PORT=8554
+      - MTX_HLS_ENABLED=true
+      - MTX_HLS_PORT=8888
+      - MTX_HLS_DIRECTORY=/tmp/hls
+    networks:
+      - app-network
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    container_name: backend-rtmp
+    hostname: backend-rtmp
+    stdin_open: true
+    ports:
+      - '4200:4200'
+    command: yarn start
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    container_name: postgres-db
+    hostname: postgres-db
+    image: postgres:16
+    environment:
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=rtmp
+      - PGDATA=/var/lib/postgresql/data
+    ports:
+      - '6432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge

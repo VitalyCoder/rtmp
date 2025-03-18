@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: build
+    container_name: front-rtmp
+    hostname: front-rtmp
+    stdin_open: true
+    ports:
+      - '3000:3000'
+    command: yarn start
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: build
+    container_name: backend-rtmp
+    hostname: backend-rtmp
+    stdin_open: true
+    ports:
+      - '4200:4200'
+    command: yarn start
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    container_name: postgres-db
+    hostname: postgres-db
+    image: postgres:16
+    environment:
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=rtmp
+      - PGDATA=/var/lib/postgresql/data
+    ports:
+      - '6432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - app-network
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    ports:
+      - '1935:1935'
+      - '8554:8554'
+      - '8888:8888'
+    environment:
+      - MTX_RTMP_ENABLED=true
+      - MTX_RTMP_PORT=1935
+      - MTX_RTSP_ENABLED=true
+      - MTX_RTSP_PORT=8554
+      - MTX_HLS_ENABLED=true
+      - MTX_HLS_PORT=8888
+      - MTX_HLS_DIRECTORY=/tmp/hls
+      - MTX_WEBHOOKS_ENABLED=true
+      - MTX_WEBHOOKS_URLS=http://localhost:4200/api/v1/webhook/stream
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /Users/macbookair/Documents/rtmp/letsencrypt:/etc/letsencrypt:ro
+      - /Users/macbookair/Documents/rtmp/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - mediamtx
+      - backend
+      - frontend
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge

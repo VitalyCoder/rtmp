@@ -1,0 +1,83 @@
+version: '3.8'
+
+# test webhook 3
+
+services:
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: build
+    env_file: stack.env
+    container_name: front-rtmp
+    hostname: front-rtmp
+    stdin_open: true
+    ports:
+      - '${APP_PORT}:${APP_PORT}'
+    command: yarn start
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: build
+    env_file: stack.env
+    container_name: backend-rtmp
+    hostname: backend-rtmp
+    stdin_open: true
+    ports:
+      - '${API_PORT}:${API_PORT}'
+    command: yarn start
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    container_name: postgres-db
+    hostname: postgres-db
+    image: postgres:16
+    env_file: stack.env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - PGDATA=/var/lib/postgresql/data
+    ports:
+      - '6432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - app-network
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    ports:
+      - '1935:1935'
+      - '8554:8554'
+      - '8888:8888'
+    environment:
+      - MTX_RTMP_ENABLED=true
+      - MTX_RTMP_PORT=1935
+      - MTX_RTSP_ENABLED=true
+      - MTX_RTSP_PORT=8554
+      - MTX_HLS_ENABLED=true
+      - MTX_HLS_PORT=8888
+      - MTX_HLS_DIRECTORY=/tmp/hls
+      - MTX_WEBHOOKS_ENABLED=true
+      - MTX_WEBHOOKS_URLS=http://localhost:4200/api/v1/webhook/stream
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge
