@@ -71,7 +71,21 @@ services:
       - MTX_HLS_PORT=8888
       - MTX_HLS_DIRECTORY=/tmp/hls
       - MTX_WEBHOOKS_ENABLED=true
-      - MTX_WEBHOOKS_URLS=http://localhost:4200/api/v1/webhook/stream
+      - MTX_WEBHOOKS_URLS=http://localhost/backend/api/v1/webhook/stream
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - '80:80'
+    volumes:
+      - /Users/macbookair/Documents/rtmp/nginx.deploy.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - mediamtx
+      - backend
+      - frontend
     networks:
       - app-network
 
