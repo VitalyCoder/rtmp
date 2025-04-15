@@ -82,7 +82,7 @@ services:
     ports:
       - '80:80'
     volumes:
-      - /Users/macbookair/Documents/rtmp/nginx.deploy.conf:/etc/nginx/nginx.conf
+      - ./nginx.deploy.conf:/etc/nginx/nginx.conf
     depends_on:
       - mediamtx
       - backend
